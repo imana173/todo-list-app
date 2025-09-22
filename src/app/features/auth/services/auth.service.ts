@@ -1,42 +1,107 @@
 import { Injectable, signal } from '@angular/core';
-import { User, LoginRequest, RegisterRequest } from '../../auth/models/user.model';
+import { Observable, of, throwError } from 'rxjs';
+import { delay, tap } from 'rxjs/operators';
+import { User, LoginRequest, RegisterRequest } from '../models/user.model';
+import { toObservable } from '@angular/core/rxjs-interop';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private users = signal<User[]>([
-    { id: 1, email: 'admin@example.com', password: 'admin123', role: 'admin', createdAt: new Date('2024-01-01') },
-    { id: 2, email: 'user@example.com',  password: 'user123',  role: 'user',  createdAt: new Date('2024-01-02')  },
-  ]);
+  // Etat utilisateur courant
+  private _currentUser = signal<User | null>(null);
+  // Signal en lecture seule pour les templates
+  currentUserSig = this._currentUser.asReadonly();
+  // Observable si besoin (guards Rx, etc.)
+  currentUser$ = toObservable(this.currentUserSig);
 
-  private currentUser = signal<User | null>(null);
-  private delay(ms: number) { return new Promise<void>(r => setTimeout(r, ms)); }
+  // Mock users
+  private users: User[] = [
+    { id: 1, name: 'Admin User',  email: 'admin@example.com', role: 'admin' },
+    { id: 2, name: 'Normal User', email: 'user@example.com',  role: 'user'  },
+  ];
 
-  async login(credentials: LoginRequest) {
-    await this.delay(500);
-    const user = this.users().find(u => u.email === credentials.email && u.password === credentials.password);
-    if (user) { this.currentUser.set(user); return { success: true, user }; }
-    return { success: false, error: 'Email ou mot de passe incorrect' };
+  // Mock mots de passe (en prod : hash côté serveur)
+  private passwords: Record<string, string> = {
+    'admin@example.com': 'admin123',
+    'user@example.com':  'user123',
+  };
+
+  constructor() {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) this._currentUser.set(JSON.parse(saved));
+  }
+
+  private setCurrentUser(user: User | null) {
+    this._currentUser.set(user);
+    if (user) localStorage.setItem('currentUser', JSON.stringify(user));
+    else localStorage.removeItem('currentUser');
+  }
+
+  login(credentials: LoginRequest): Observable<User> {
+    const user = this.users.find(u => u.email === credentials.email);
+    const pwd  = this.passwords[credentials.email];
+
+    if (user && pwd === credentials.password) {
+      return of(user).pipe(
+        delay(500),
+        tap(u => this.setCurrentUser(u))
+      );
+    }
+    return throwError(() => new Error('Email ou mot de passe incorrect'));
+  }
+
+  register(req: RegisterRequest): Observable<User> {
+    const exists = this.users.some(u => u.email === req.email);
+    if (exists) return throwError(() => new Error('Cet email est déjà utilisé'));
+    if (req.password !== req.confirmPassword) {
+      return throwError(() => new Error('Les mots de passe ne correspondent pas'));
     }
 
-  async register(data: RegisterRequest) {
-    await this.delay(600);
-    if (this.users().some(u => u.email === data.email)) return { success: false, error: 'Cet email est déjà utilisé' };
-    if (data.password !== data.confirmPassword) return { success: false, error: 'Les mots de passe ne correspondent pas' };
-    const user: User = { id: Date.now(), email: data.email, password: data.password, role: 'user', createdAt: new Date() };
-    this.users.update(arr => [...arr, user]);
-    this.currentUser.set(user);
-    return { success: true, user };
+    const newUser: User = {
+      id: this.users.length + 1,
+      name: req.name,
+      email: req.email,
+      role: 'user'
+    };
+    this.users.push(newUser);
+    this.passwords[req.email] = req.password;
+
+    return of(newUser).pipe(
+      delay(500),
+      tap(u => this.setCurrentUser(u))
+    );
   }
 
-  async logout() { await this.delay(200); this.currentUser.set(null); }
-  isAuthenticated() { return this.currentUser() !== null; }
-  isAdmin() { return this.currentUser()?.role === 'admin'; }
-  getCurrentUser() { return this.currentUser(); }
-
-  async getAllUsers(): Promise<User[]> {
-    await this.delay(400);
-    if (!this.isAdmin()) throw new Error('Accès non autorisé');
-    return this.users().map(u => ({ ...u, password: '***' }));
+  logout(): void {
+    this.setCurrentUser(null);
   }
+
+  // Utilitaire token mock (pour la 2.5 plus tard)
+  getToken(): string | null {
+    const u = this._currentUser();
+    return u ? `mock-token-${u.id}` : null;
+  }
+
+  // Admin-only (on s’en servira en 2.4)
+  getAllUsers(): Observable<User[]> {
+    return of(this.users).pipe(delay(300));
+  }
+
+  deleteUser(id: number): Observable<void> {
+    const i = this.users.findIndex(u => u.id === id);
+    if (i === -1) return throwError(() => new Error('Utilisateur non trouvé'));
+    this.users.splice(i, 1);
+    return of(void 0).pipe(delay(300));
+  }
+
+  // src/app/features/auth/services/auth.service.ts
+updateUserRole(id: number, role: 'user' | 'admin') {
+  const user = this.users.find(u => u.id === id);
+  if (!user) return throwError(() => new Error('Utilisateur non trouvé'));
+  user.role = role;
+  return of(user).pipe(delay(300));
 }
+
+}
+
+
 
