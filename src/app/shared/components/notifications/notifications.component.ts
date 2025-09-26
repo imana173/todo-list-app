@@ -11,6 +11,7 @@ import { ErrorService } from '../../../core/services/error.service';
       @for (n of errorService.notifications$(); track n.id) {
         <div 
           class="px-4 py-2 rounded shadow-md animate-fade-in text-white"
+          [class.bg-green-600]="n.type === 'success'"
           [class.bg-red-600]="n.type === 'error'"
           [class.bg-yellow-500]="n.type === 'warning'"
           [class.bg-blue-500]="n.type === 'info'"

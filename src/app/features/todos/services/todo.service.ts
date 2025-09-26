@@ -1,3 +1,4 @@
+// src/app/features/todos/services/todo.service.ts
 import { Injectable, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Todo, CreateTodoRequest } from '../../todos/models/todo.model';
@@ -11,6 +12,7 @@ export class TodoService {
       this.todos.set(
         JSON.parse(saved).map((t: any) => ({
           ...t,
+          assignedTo: t.assignedTo ?? undefined,   // ✅ persistance de l’assignation
           createdAt: new Date(t.createdAt),
           updatedAt: new Date(t.updatedAt),
         }))
@@ -106,7 +108,7 @@ export class TodoService {
       status: 'todo',
       priority: data.priority,
       estimatedTime: data.estimatedTime ?? 60, // ⏱️ 60 min par défaut
-      assignedTo: data.assignedTo,
+      assignedTo: data.assignedTo,             // ✅ prise en charge assignation
       createdBy: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -149,6 +151,8 @@ export class TodoService {
       .toPromise();
   }
 }
+
+
 
 
 

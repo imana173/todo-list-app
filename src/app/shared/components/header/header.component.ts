@@ -9,11 +9,12 @@ import { AuthService } from '../../../features/auth/services/auth.service';
   template: `
     <header class="bg-blue-600 text-white p-4">
       <div class="container mx-auto flex justify-between items-center">
-        <h1 class="text-2xl font-bold"><a routerLink="/todos">TodoList App</a></h1>
+        <h1 class="text-2xl font-bold"><a routerLink="/">TodoList App</a></h1>
         <nav>
           <ul class="flex space-x-4">
             @if (user()) {
               <li><a routerLink="/todos" class="hover:text-blue-200">Todos</a></li>
+              <li><a routerLink="/projects" class="hover:text-blue-200">Projets</a></li>
               @if (user()?.role === 'admin') {
                 <li><a routerLink="/admin" class="hover:text-blue-200">Admin</a></li>
               }
@@ -39,4 +40,6 @@ export class HeaderComponent {
     this.router.navigateByUrl('/auth/login');
   }
 }
+
+
 

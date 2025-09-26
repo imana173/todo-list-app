@@ -1,10 +1,9 @@
-// src/app/core/services/error.service.ts
 import { Injectable, signal } from '@angular/core';
 
 export interface Notification {
   id: string;
   message: string;
-  type: 'error' | 'warning' | 'info';
+  type: 'success' | 'error' | 'warning' | 'info';
 }
 
 @Injectable({ providedIn: 'root' })
@@ -12,7 +11,7 @@ export class ErrorService {
   private notifications = signal<Notification[]>([]);
   public notifications$ = this.notifications.asReadonly();
 
-  add(message: string, type: 'error' | 'warning' | 'info' = 'error') {
+  add(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') {
     const notif: Notification = {
       id: Date.now().toString(),
       message,
@@ -31,16 +30,21 @@ export class ErrorService {
   clearAll() {
     this.notifications.set([]);
   }
+
+  addSuccess(message: string) {
+    this.add(message, 'success');
+  }
+
   addError(message: string) {
-  this.add(message, 'error');
+    this.add(message, 'error');
+  }
+
+  addWarning(message: string) {
+    this.add(message, 'warning');
+  }
+
+  addInfo(message: string) {
+    this.add(message, 'info');
+  }
 }
 
-addWarning(message: string) {
-  this.add(message, 'warning');
-}
-
-addInfo(message: string) {
-  this.add(message, 'info');
-}
-
-}

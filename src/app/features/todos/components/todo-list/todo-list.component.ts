@@ -9,11 +9,14 @@ import { PriorityPipe } from '../../../../shared/pipes/priority.pipe';
 import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
 import { HighlightDirective } from '../../../../shared/directives/highlight.directive';
 
+// ✅ Notifications
+import { ErrorService } from '../../../../core/services/error.service';
+
 @Component({
   selector: 'app-todo-list',
   standalone: true,
   imports: [CommonModule, FormsModule, PriorityPipe, DurationPipe, HighlightDirective],
-  changeDetection: ChangeDetectionStrategy.OnPush, // ⚡ optimisation 4.2
+  changeDetection: ChangeDetectionStrategy.OnPush, // ⚡ optimisation
   template: `
   <div class="max-w-5xl mx-auto">
     <h2 class="text-3xl font-bold mb-6">Mes Todos</h2>
@@ -151,6 +154,7 @@ import { HighlightDirective } from '../../../../shared/directives/highlight.dire
 })
 export class TodoListComponent implements OnInit {
   todoService = inject(TodoService);
+  errorService = inject(ErrorService);
   addingTodo = signal(false);
 
   newTodo = { title: '', description: '', priority: 'medium' as const, estimatedTime: 60 };
@@ -160,31 +164,47 @@ export class TodoListComponent implements OnInit {
   }
 
   async addTodo() {
-    if (!this.newTodo.title.trim()) return;
+    if (!this.newTodo.title.trim()) {
+      this.errorService.addError('❌ Le titre est requis');
+      return;
+    }
     try {
       this.addingTodo.set(true);
       await this.todoService.createTodo({ ...this.newTodo });
+      this.errorService.addSuccess('✅ Tâche ajoutée avec succès');
 
-      // ✅ reset des champs sans casser le binding
+      // reset
       this.newTodo.title = '';
       this.newTodo.description = '';
       this.newTodo.priority = 'medium';
       this.newTodo.estimatedTime = 60;
+    } catch {
+      this.errorService.addError('❌ Erreur lors de l’ajout de la tâche');
     } finally {
       this.addingTodo.set(false);
     }
   }
 
   async updateStatus(id: number, status: Todo['status']) {
-    await this.todoService.updateTodo(id, { status });
+    try {
+      await this.todoService.updateTodo(id, { status });
+      this.errorService.addInfo(`ℹ️ Statut mis à jour : ${status}`);
+    } catch {
+      this.errorService.addError('❌ Erreur lors de la mise à jour du statut');
+    }
   }
 
   async deleteTodo(id: number) {
-    await this.todoService.deleteTodo(id);
+    try {
+      await this.todoService.deleteTodo(id);
+      this.errorService.addWarning('⚠️ Tâche supprimée');
+    } catch {
+      this.errorService.addError('❌ Erreur lors de la suppression');
+    }
   }
 
-  // ⚡ utilisé dans @for → évite de recréer la liste complète
   trackByTodoId(index: number, todo: Todo): number {
     return todo.id;
   }
 }
+

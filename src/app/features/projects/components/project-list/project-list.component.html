@@ -1,0 +1,87 @@
+<div class="max-w-3xl mx-auto">
+  <h2 class="text-2xl font-bold mb-6">Mes Projets</h2>
+
+  <!-- Formulaire ajout -->
+  <div class="bg-white p-6 rounded shadow mb-6">
+    <form (ngSubmit)="addProject()" #projectForm="ngForm" class="flex gap-4">
+      <input
+        class="border p-2 rounded flex-1"
+        type="text"
+        [(ngModel)]="newProject.name"
+        name="name"
+        placeholder="Nom du projet"
+        required
+      />
+      <input
+        class="border p-2 rounded flex-1"
+        type="text"
+        [(ngModel)]="newProject.description"
+        name="description"
+        placeholder="Description"
+      />
+      <button
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        type="submit"
+        [disabled]="!projectForm.form.valid || addingProject()"
+      >
+        Ajouter
+      </button>
+    </form>
+  </div>
+
+  <!-- Liste -->
+  <div class="space-y-3">
+    <div *ngFor="let project of projects" class="bg-white p-4 rounded shadow">
+      <!-- Mode affichage -->
+      <div
+        *ngIf="editingProjectId !== project.id; else editMode"
+        class="flex justify-between items-center"
+      >
+        <div>
+          <h3 class="font-semibold">{{ project.name }}</h3>
+          <p class="text-sm text-gray-600">{{ project.description }}</p>
+        </div>
+        <div class="flex gap-2">
+          <button (click)="startEditing(project)" class="text-blue-600 hover:text-blue-800">
+            Modifier
+          </button>
+          <button (click)="deleteProject(project.id)" class="text-red-600 hover:text-red-800">
+            Supprimer
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode édition -->
+      <ng-template #editMode>
+        <div class="flex flex-col gap-2">
+          <input
+            class="border p-2 rounded"
+            type="text"
+            [(ngModel)]="editData.name"
+            placeholder="Nom du projet"
+          />
+          <input
+            class="border p-2 rounded"
+            type="text"
+            [(ngModel)]="editData.description"
+            placeholder="Description"
+          />
+          <div class="flex gap-2">
+            <button
+              (click)="updateProject(project.id)"
+              class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+            >
+              Sauvegarder
+            </button>
+            <button
+              (click)="cancelEditing()"
+              class="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

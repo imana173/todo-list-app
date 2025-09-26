@@ -17,6 +17,12 @@ export const routes: Routes = [
       import('./features/todos/todos.routes').then(m => m.TODOS_ROUTES)
   },
   {
+    path: 'projects',
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./features/projects/projects.routes').then(m => m.PROJECTS_ROUTES)
+  },
+  {
     path: 'admin',
     canActivate: [authGuard, adminGuard],
     loadChildren: () =>
@@ -25,6 +31,7 @@ export const routes: Routes = [
 
   { path: '**', redirectTo: 'auth/login' }
 ];
+
 
 
 
